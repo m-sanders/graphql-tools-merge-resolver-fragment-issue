@@ -14,7 +14,7 @@ npm run dev
 
 Visit: http://localhost:4000
 
-### Query
+### Query 5.0.0
 
 ```
 {
@@ -128,7 +128,7 @@ fragment ConcreteFragmentViaConcrete on Product {
 }
 ```
 
-### Result
+#### Result
 
 ```
 {
@@ -349,6 +349,134 @@ fragment ConcreteFragmentViaConcrete on Product {
           {
             "title": "T-Shirt",
             "stockRecordViaConcrete": {
+              "stock": 100
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Query 4.0.x
+
+```
+{
+  # PASS
+  s1: collections {
+    name
+    products {
+      title
+      stockRecord {
+        id
+        stock
+      }
+    }
+  }
+
+  # PASS
+  s2: collections {
+    name
+    products {
+      ... on IProduct {
+        title
+        stockRecord {
+          stock
+        }
+      }
+    }
+  }
+
+  # PASS
+  s3: collections {
+    name
+    products {
+      ...InterfaceFragment
+    }
+  }
+
+  # PASS
+  s4: collections {
+    name
+    products {
+      ...ConcreteFragment
+    }
+  }
+}
+
+fragment InterfaceFragment on IProduct {
+  title
+  stockRecord {
+    id
+    stock
+  }
+}
+
+fragment ConcreteFragment on Product {
+  title
+  stockRecord {
+    id
+    stock
+  }
+}
+
+```
+
+#### Result:
+
+```
+{
+  "data": {
+    "s1": [
+      {
+        "name": "Apparel",
+        "products": [
+          {
+            "title": "T-Shirt",
+            "stockRecord": {
+              "id": "1",
+              "stock": 100
+            }
+          }
+        ]
+      }
+    ],
+    "s2": [
+      {
+        "name": "Apparel",
+        "products": [
+          {
+            "title": "T-Shirt",
+            "stockRecord": {
+              "stock": 100
+            }
+          }
+        ]
+      }
+    ],
+    "s3": [
+      {
+        "name": "Apparel",
+        "products": [
+          {
+            "title": "T-Shirt",
+            "stockRecord": {
+              "id": "1",
+              "stock": 100
+            }
+          }
+        ]
+      }
+    ],
+    "s4": [
+      {
+        "name": "Apparel",
+        "products": [
+          {
+            "title": "T-Shirt",
+            "stockRecord": {
+              "id": "1",
               "stock": 100
             }
           }

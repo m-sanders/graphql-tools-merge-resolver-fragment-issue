@@ -1,4 +1,4 @@
-import { ApolloServer } from "apollo-server";
+import { ApolloServer, delegateToSchema } from "apollo-server";
 import { makeExecutableSchema, mergeSchemas } from "graphql-tools";
 
 const STOCK_RECORDS = {
@@ -43,14 +43,21 @@ const COLLECTIONS = [
 
 const local = makeExecutableSchema({
   typeDefs: `
+    type StockRecord {
+      id: ID!
+      stock: Int!
+    }
+    
     interface IProduct {
       id: ID!
       title: String!
+      stockRecord: StockRecord
     }
 
     type Product implements IProduct {
       id: ID!
       title: String!
+      stockRecord: StockRecord
     }
 
     type Collection {
@@ -64,6 +71,18 @@ const local = makeExecutableSchema({
     }
   `,
   resolvers: {
+    Product: {      
+      stockRecord: (obj, __, context, info) => {
+        return delegateToSchema({
+          schema: remote,
+          operation: "query",
+          fieldName: "stockRecord",
+          args: { id: obj.id },
+          context,
+          info,
+        });
+      },
+    },
     Query: {
       collections: () => COLLECTIONS,
     },
@@ -74,53 +93,7 @@ const runServer = async () => {
   const server = new ApolloServer({
     schema: mergeSchemas({
       inheritResolversFromInterfaces: true,
-      subschemas: [
-        {
-          schema: local,
-        },
-        {
-          schema: remote,
-        },
-      ],
-      resolvers: {
-        Product: {
-          stockRecordViaInterface: {
-            fragment: ` ... on IProduct { id } `,
-            resolve(obj, __, ___, info) {
-              return info.mergeInfo?.delegateToSchema({
-                schema: remote,
-                operation: "query",
-                fieldName: "stockRecord",
-                args: { id: obj.id },
-                info,
-              });
-            },
-          },
-          stockRecordViaConcrete: {
-            fragment: ` ... on Product { id } `,
-            resolve(obj, __, ___, info) {
-              return info.mergeInfo?.delegateToSchema({
-                schema: remote,
-                operation: "query",
-                fieldName: "stockRecord",
-                args: { id: obj.id },
-                info,
-              });
-            },
-          },
-        },
-      },
-      typeDefs: `
-        extend interface IProduct {
-          stockRecordViaInterface: StockRecord
-          stockRecordViaConcrete: StockRecord
-        }
-
-        extend type Product {
-          stockRecordViaInterface: StockRecord
-          stockRecordViaConcrete: StockRecord
-        }
-      `,
+      schemas: [local, remote],
     }),
   });
   await server
